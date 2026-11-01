@@ -1,0 +1,76 @@
+<input type="text" id="taskTitle" placeholder="اكتبي عنوان المهمة هنا...">
+    <button onclick="addTask()">إضافة مهمة</button>
+
+    <h3>المهام المضافة:</h3>
+    <ul id="taskList"></ul>
+</div>
+
+<script>
+    async function fetchTasks() {
+        const res = await fetch('/tasks');
+        const tasks = await res.json();
+        const list = document.getElementById('taskList');
+        list.innerHTML = '';
+        
+        tasks.forEach(t => {
+            const li = document.createElement('li');
+            
+            // حاوية النص ومربع الاختيار
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'task-info';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = t.done;
+            checkbox.onchange = () => toggleTask(t.id, checkbox.checked);
+
+            const span = document.createElement('span');
+            span.textContent = t.title;
+            if (t.done) span.classList.add('done');
+
+            infoDiv.appendChild(checkbox);
+            infoDiv.appendChild(span);
+
+            // زر الحذف
+            const delBtn = document.createElement('button');
+            delBtn.textContent = 'حذف';
+            delBtn.className = 'delete-btn';
+            delBtn.onclick = () => deleteTask(t.id);
+
+            li.appendChild(infoDiv);
+            li.appendChild(delBtn);
+            list.appendChild(li);
+        });
+    }
+
+    async function addTask() {
+        const titleInput = document.getElementById('taskTitle');
+        const title = titleInput.value;
+        if (!title) return alert('الرجاء كتابة اسم المهمة');
+
+        await fetch('/tasks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title })
+        });
+
+        titleInput.value = '';
+        fetchTasks();
+    }
+
+    async function deleteTask(id) {
+        await fetch(`/tasks/${id}`, { method: 'DELETE' });
+        fetchTasks();
+    }
+
+    async function toggleTask(id, done) {
+        await fetch(`/tasks/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ done })
+        });
+        fetchTasks();
+    }
+
+    fetchTasks();
+</script>
